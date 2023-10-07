@@ -46,7 +46,6 @@ if (Console.IsOutputRedirected)
     return;
 }
 
-res = await client.GetAsync(baseAddr + "budgets");
 
 var budgets = await ynabClient.GetBudgetsAsync(false);
 var names = budgets?.Data?.Budgets.Select(x => x.Name).ToList();
@@ -64,9 +63,14 @@ if (names != null)
     var budget = await ynabClient.GetBudgetByIdAsync(choiceId.ToString(), null);
 
     AnsiConsole.WriteLine($"You fetched the budget {budget.Data.Budget.Name}");
-
     AnsiConsole.Clear();
     var transactions = await ynabClient.GetTransactionsAsync(choiceId.ToString(), null, Type.Unapproved, null);
+    AnsiConsole.WriteLine("Attempting to import transactions...");
+    var imports = await ynabClient.ImportTransactionsAsync(choiceId.ToString());
+    AnsiConsole.WriteLine($"Imported {imports.Data.Transaction_ids.Count} new transactions");
+    AnsiConsole.WriteLine("Waiting for import to sync to YNAB...");
+    await Task.Delay(5000);
+    AnsiConsole.Clear();
     AnsiConsole.WriteLine($"Current transactions:");
     foreach (var tx in transactions.Data.Transactions)
     {
@@ -76,7 +80,7 @@ if (names != null)
         var formattedAmount = preDecimal.Insert(preDecimal.Length - 2, ".");
 
 
-        AnsiConsole.WriteLine($"{tx.Date.ToString("MM/dd/yyyy")}" + " " + tx.Payee_name + " " + tx.Account_name + " " +
+        AnsiConsole.WriteLine($"{tx.Date:MM/dd/yyyy}" + " " + tx.Payee_name + " " + tx.Account_name + " " +
                               formattedAmount + " " + tx.Category_name);
     }
 }
